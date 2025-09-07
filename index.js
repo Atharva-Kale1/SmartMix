@@ -168,7 +168,7 @@ app.use(async (req, res, next) => {
 
 // --- Serve the HTML file for the root path ---
 app.get('/', (req, res) => {
-    res.sendFile(path.join(process.cwd(), 'client.html'));
+    res.sendFile(path.join(__dirname, 'client.html'));
 });
 
 // --- Debug endpoint to check CSV contents ---
@@ -471,11 +471,10 @@ app.get('/refresh-token', async (req, res) => {
     }
 });
 
-const port = process.env.PORT || 8888;
-app.listen(port, () => {
+app.listen(8888, () => {
     console.log('==========================================');
-    console.log(`Spotify Server running on port ${port}!`);
-    console.log('👉 Go to /login to authenticate with Spotify');
+    console.log('Spotify Server running on port 8888!');
+    console.log('👉 Go to http://127.0.0.1:8888/login to authenticate with Spotify');
     console.log('👉 Debug endpoints:');
     console.log('   - /debug-csv - Check CSV contents');
     console.log('   - /current-song - Get current playing song');
