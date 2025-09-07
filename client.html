@@ -46,7 +46,8 @@
     <div id="login-page" class="container bg-gray-800 p-8 rounded-xl shadow-lg w-full text-center">
         <h1 class="text-3xl font-bold mb-4">Welcome to SmartFade</h1>
         <p class="text-gray-400 mb-6">Connect your Spotify account to start generating music recommendations and build a continuous queue.</p>
-        <a href="http://127.0.0.1:8888/login" class="inline-block spotify-green button text-white font-semibold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 active:scale-95 transition-transform">
+        <!-- The URL is now a RELATIVE path -->
+        <a href="/login" class="inline-block spotify-green button text-white font-semibold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 active:scale-95 transition-transform">
             Login with Spotify
         </a>
     </div>
@@ -114,7 +115,8 @@
         const loadingSpinner = document.getElementById('loading-spinner');
         const loginPage = document.getElementById('login-page');
         const appPage = document.getElementById('app-page');
-        const serverUrl = 'http://127.0.0.1:8888';
+        // The serverUrl is now a RELATIVE path, so it will use the current domain.
+        const serverUrl = '';
 
         let pollingIntervalId = null;
         let lastTrackUri = null;
@@ -278,7 +280,6 @@
 
         autoQueueBtn.addEventListener('click', toggleAutoQueue);
 
-        // Run this on page load to check if the user is already authenticated
         document.addEventListener('DOMContentLoaded', checkAuthStatus);
     </script>
 </body>
