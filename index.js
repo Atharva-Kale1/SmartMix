@@ -168,7 +168,7 @@ app.use(async (req, res, next) => {
 
 // --- Serve the HTML file for the root path ---
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'client.html'));
+    res.sendFile(path.join(process.cwd(), 'client.html'));
 });
 
 // --- Debug endpoint to check CSV contents ---
