@@ -471,10 +471,11 @@ app.get('/refresh-token', async (req, res) => {
     }
 });
 
-app.listen(8888, () => {
+const port = process.env.PORT || 8888;
+app.listen(port, () => {
     console.log('==========================================');
-    console.log('Spotify Server running on port 8888!');
-    console.log('👉 Go to http://127.0.0.1:8888/login to authenticate with Spotify');
+    console.log(`Spotify Server running on port ${port}!`);
+    console.log('👉 Go to /login to authenticate with Spotify');
     console.log('👉 Debug endpoints:');
     console.log('   - /debug-csv - Check CSV contents');
     console.log('   - /current-song - Get current playing song');
