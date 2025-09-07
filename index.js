@@ -28,6 +28,11 @@ const userTokens = {};
 
 // --- Function to get the Python executable path ---
 function getPythonExecutable() {
+    // On Vercel, Python may not be available in Node.js runtime
+    if (process.env.VERCEL) {
+        console.log('Running on Vercel - attempting to use python3');
+        return 'python3';
+    }
     const pythonExecutables = ['python3', 'python']; // Check for common Python executables on Linux servers
     for (const exec of pythonExecutables) {
         try {
@@ -466,12 +471,15 @@ app.get('/refresh-token', async (req, res) => {
     }
 });
 
-app.listen(8888, () => {
+app.listen(process.env.PORT || 8888, () => {
+    const port = process.env.PORT || 8888;
     console.log('==========================================');
-    console.log('Spotify Server running on port 8888!');
-    console.log('👉 Go to http://127.0.0.1:8888/login to authenticate with Spotify');
-    console.log('👉 Debug endpoints:');
-    console.log('   - /debug-csv - Check CSV contents');
-    console.log('   - /current-song - Get current playing song');
+    console.log(`Spotify Server running on port ${port}!`);
+    if (!process.env.VERCEL) {
+        console.log('👉 Go to http://127.0.0.1:8888/login to authenticate with Spotify');
+        console.log('👉 Debug endpoints:');
+        console.log('   - /debug-csv - Check CSV contents');
+        console.log('   - /current-song - Get current playing song');
+    }
     console.log('==========================================');
 });
