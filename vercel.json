@@ -12,5 +12,15 @@
       "dest": "index.js"
     }
   ],
-  "installCommand": "pip install -r requirements.txt && npm install"
+  "installCommand": "pip install -r requirements.txt && npm install",
+  "runtimes": [
+    {
+      "name": "node",
+      "version": "20.x"
+    },
+    {
+      "name": "python",
+      "version": "3.12"
+    }
+  ]
 }
