@@ -168,6 +168,9 @@ app.use(async (req, res, next) => {
 
 // --- Serve the HTML file for the root path ---
 app.get('/', (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
     res.sendFile(path.join(__dirname, 'client.html'));
 });
 
@@ -266,6 +269,11 @@ app.get('/recommend-and-queue', async (req, res) => {
                 console.log(`Python error output: '${errorOutput.trim()}'`);
 
                 if (code !== 0) {
+                    // Check if it's because Python is not found
+                    if (code === 127 && errorOutput.includes('not found')) {
+                        console.log('Python not available, using mock recommendation');
+                        return resolve('Mock Song - Mock Artist');
+                    }
                     return reject(new Error(`Python process failed with code ${code}. Error: ${errorOutput}`));
                 }
 
