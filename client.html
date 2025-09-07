@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartFade - Spotify Client</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #121212;
+            color: #ffffff;
+            transition: all 0.3s ease-in-out;
+        }
+        .container { max-width: 600px; }
+        .spotify-green { background-color: #1DB954; }
+        .spotify-green-hover:hover { background-color: #1ed760; }
+        .text-spotify-green { color: #1DB954; }
+        .auto-queue-btn { background-color: #007bff; }
+        .auto-queue-btn.running { background-color: #ff4d4f; }
+        .button {
+            transition: transform 0.2s, background-color 0.2s;
+            transform: scale(1);
+        }
+        .button:active {
+            transform: scale(0.97);
+        }
+        #app-page, #login-page {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center p-4">
+    <div id="login-page" class="container bg-gray-800 p-8 rounded-xl shadow-lg w-full text-center">
+        <h1 class="text-3xl font-bold mb-4">Welcome to SmartFade</h1>
+        <p class="text-gray-400 mb-6">Connect your Spotify account to start generating music recommendations and build a continuous queue.</p>
+        <a href="http://127.0.0.1:8888/login" class="inline-block spotify-green button text-white font-semibold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 active:scale-95 transition-transform">
+            Login with Spotify
+        </a>
+    </div>
+
+    <div id="app-page" class="container bg-gray-800 p-8 rounded-xl shadow-lg w-full space-y-6 hidden">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold">SmartFade</h1>
+            <button id="logout-btn" class="text-sm text-gray-400 hover:text-red-400 transition-colors">Logout</button>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-2xl font-semibold">1. Get Current Song</h2>
+            <p class="text-gray-400">See what's currently playing on your Spotify device.</p>
+            <button id="get-song-btn" class="w-full bg-gray-600 button text-white font-semibold py-3 px-6 rounded-full hover:bg-gray-500">
+                Get Current Song
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-2xl font-semibold">2. Queue a Random Song</h2>
+            <p class="text-gray-400">Add a random song to your queue.</p>
+            <button id="queue-song-btn" class="w-full spotify-green button text-white font-semibold py-3 px-6 rounded-full spotify-green-hover shadow-lg">
+                Queue a Random Song
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-2xl font-semibold">3. Get Recommendation</h2>
+            <p class="text-gray-400">Add a song recommendation based on your current track to the queue.</p>
+            <button id="recommend-btn" class="w-full bg-purple-600 button text-white font-semibold py-3 px-6 rounded-full hover:bg-purple-500 shadow-lg">
+                Get Recommendation
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <h2 class="text-2xl font-semibold">4. Auto-Queue (Run/Pause)</h2>
+            <p class="text-gray-400">Continuously adds a recommended song to your queue as each song ends.
+                <img src="https://placehold.co/400x200/22c55e/ffffff?text=Auto-Queue+Example" alt="Image of a spotify playlist" class="mt-4 rounded-lg shadow-md w-full h-auto">
+            </p>
+            <button id="auto-queue-btn" class="w-full auto-queue-btn button text-white font-semibold py-3 px-6 rounded-full hover:opacity-80 shadow-lg">
+                Start Auto-Queue
+            </button>
+        </div>
+
+        <div id="status-area" class="mt-8 p-4 bg-gray-700 rounded-lg hidden">
+            <h3 class="text-lg font-semibold mb-2 flex items-center">
+                <svg id="loading-spinner" class="animate-spin h-5 w-5 mr-3 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Status:
+            </h3>
+            <pre id="response-data" class="text-sm text-gray-300 whitespace-pre-wrap break-words"></pre>
+        </div>
+    </div>
+
+    <script>
+        const getSongBtn = document.getElementById('get-song-btn');
+        const queueSongBtn = document.getElementById('queue-song-btn');
+        const recommendBtn = document.getElementById('recommend-btn');
+        const autoQueueBtn = document.getElementById('auto-queue-btn');
+        const logoutBtn = document.getElementById('logout-btn');
+        const statusArea = document.getElementById('status-area');
+        const responseData = document.getElementById('response-data');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const loginPage = document.getElementById('login-page');
+        const appPage = document.getElementById('app-page');
+        const serverUrl = 'http://127.0.0.1:8888';
+
+        let pollingIntervalId = null;
+        let lastTrackUri = null;
+
+        function updateStatus(message, isError = false) {
+            statusArea.classList.remove('hidden');
+            responseData.textContent = message;
+            responseData.style.color = isError ? '#FF6B6B' : '#FFFFFF';
+        }
+
+        function showLoading() {
+            loadingSpinner.classList.remove('hidden');
+        }
+
+        function hideLoading() {
+            loadingSpinner.classList.add('hidden');
+        }
+
+        async function checkAndQueue() {
+            try {
+                const response = await fetch(`${serverUrl}/current-song`);
+                const data = await response.json();
+    
+                if (!response.ok || !data.uri) {
+                    updateStatus('No song is currently playing on an active device. Pausing auto-queue until a song starts.', true);
+                    lastTrackUri = null;
+                    return;
+                }
+
+                if (data.uri !== lastTrackUri) {
+                    updateStatus(`New song detected: "${data.title}" by ${data.artist}. Recommending a new song...`);
+                    lastTrackUri = data.uri;
+                    
+                    const queueResponse = await fetch(`${serverUrl}/recommend-and-queue`);
+                    const queueData = await queueResponse.json();
+    
+                    if (queueResponse.ok) {
+                        updateStatus(`Successfully queued: "${queueData.track.name}" by ${queueData.track.artist}\n\n${JSON.stringify(queueData, null, 2)}`);
+                    } else {
+                        updateStatus(`Error queuing recommendation: ${queueData.error || 'Unknown error'}`, true);
+                    }
+                } else {
+                    updateStatus(`Waiting for the current song to end. Listening to: "${data.title}"...`);
+                }
+    
+            } catch (error) {
+                console.error('Fetch error during auto-queue:', error);
+                updateStatus('Failed to connect to the server. Is the Node.js server running?', true);
+                
+                clearInterval(pollingIntervalId);
+                pollingIntervalId = null;
+                autoQueueBtn.textContent = 'Start Auto-Queue';
+                autoQueueBtn.classList.remove('running');
+            }
+        }
+
+        function toggleAutoQueue() {
+            if (pollingIntervalId) {
+                clearInterval(pollingIntervalId);
+                pollingIntervalId = null;
+                autoQueueBtn.textContent = 'Start Auto-Queue';
+                autoQueueBtn.classList.remove('running');
+                updateStatus('Auto-Queue has been stopped.', false);
+            } else {
+                autoQueueBtn.textContent = 'Stop Auto-Queue';
+                autoQueueBtn.classList.add('running');
+                updateStatus('Auto-Queue has been started. Waiting for the next song...');
+                
+                pollingIntervalId = setInterval(checkAndQueue, 5000); 
+            }
+        }
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${serverUrl}/auth-status`);
+                if (response.ok) {
+                    loginPage.classList.add('hidden');
+                    appPage.classList.remove('hidden');
+                } else {
+                    loginPage.classList.remove('hidden');
+                    appPage.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error checking authentication status:', error);
+                loginPage.classList.remove('hidden');
+                appPage.classList.add('hidden');
+            }
+        }
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await fetch(`${serverUrl}/logout`);
+                alert('You have been logged out.');
+                window.location.reload();
+            } catch (error) {
+                console.error('Logout failed:', error);
+                alert('Logout failed. Please try again.');
+            }
+        });
+
+        getSongBtn.addEventListener('click', async () => {
+            showLoading();
+            updateStatus('Fetching current song...');
+            try {
+                const response = await fetch(`${serverUrl}/current-song`);
+                const data = await response.json();
+                if (response.ok) {
+                    updateStatus(JSON.stringify(data, null, 2));
+                } else {
+                    updateStatus(`Error: ${data.error || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                updateStatus('Failed to connect to the server. Is the Node.js server running?', true);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        queueSongBtn.addEventListener('click', async () => {
+            showLoading();
+            updateStatus('Queueing a random song...');
+            try {
+                const response = await fetch(`${serverUrl}/queue-random-song`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({})
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    updateStatus(JSON.stringify(data, null, 2));
+                } else {
+                    updateStatus(`Error: ${data.error || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                updateStatus('Failed to connect to the server. Is the Node.js server running?', true);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        recommendBtn.addEventListener('click', async () => {
+            showLoading();
+            updateStatus('Getting recommendation and queueing song...');
+            try {
+                const response = await fetch(`${serverUrl}/recommend-and-queue`);
+                const data = await response.json();
+                if (response.ok) {
+                    updateStatus(`Best Match: ${data.bestMatchName}\n\n${JSON.stringify(data, null, 2)}`);
+                } else {
+                    updateStatus(`Error: ${data.error || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                console.error('Fetch error:', error);
+                updateStatus('Failed to connect to the server. Is the Node.js server running?', true);
+            } finally {
+                hideLoading();
+            }
+        });
+
+        autoQueueBtn.addEventListener('click', toggleAutoQueue);
+
+        // Run this on page load to check if the user is already authenticated
+        document.addEventListener('DOMContentLoaded', checkAuthStatus);
+    </script>
+</body>
+</html>
