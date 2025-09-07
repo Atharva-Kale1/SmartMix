@@ -28,58 +28,53 @@ const userTokens = {};
 
 // --- Function to get the Python executable path ---
 function getPythonExecutable() {
-    const userPath = process.env.PYTHON_EXECUTABLE;
-    if (userPath) {
-        console.log(`Using Python executable from .env: ${userPath}`);
-        return userPath;
-    }
-    const pythonExecutables = ['python3', 'python', 'py'];
-    for (const exec of pythonExecutables) {
-        try {
-            const { spawnSync } = require('child_process');
-            const result = spawnSync(exec, ['--version'], { encoding: 'utf-8' });
-            if (result.status === 0) {
-                console.log(`Found Python executable at: ${exec}`);
-                return exec;
-            }
-        } catch (error) {
-            continue;
-        }
-    }
-    throw new Error('Python executable not found. Please ensure Python is installed and added to your system\'s PATH.');
+    const pythonExecutables = ['python3', 'python']; // Check for common Python executables on Linux servers
+    for (const exec of pythonExecutables) {
+        try {
+            const { spawnSync } = require('child_process');
+            const result = spawnSync(exec, ['--version'], { encoding: 'utf-8' });
+            if (result.status === 0) {
+                console.log(`Found Python executable at: ${exec}`);
+                return exec;
+            }
+        } catch (error) {
+            continue;
+        }
+    }
+    throw new Error('Python executable not found. Please ensure Python is installed and available on the server\'s PATH.');
 }
 
 // --- 1. Login/Authentication Endpoint ---
 app.get('/login', (req, res) => {
-    console.log('Redirecting to Spotify for authentication...');
-    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(scopes)}`;
-    res.redirect(authUrl);
+    console.log('Redirecting to Spotify for authentication...');
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&response_type=code&redirect_uri=${redirectUri}&scope=${encodeURIComponent(scopes)}`;
+    res.redirect(authUrl);
 });
 
 // --- 2. Callback Endpoint ---
 app.get('/callback', async (req, res) => {
-    const code = req.query.code || null;
-    if (!code) {
-        return res.status(400).json({ error: 'Authorization code not provided.' });
-    }
+    const code = req.query.code || null;
+    if (!code) {
+        return res.status(400).json({ error: 'Authorization code not provided.' });
+    }
 
-    try {
-        const authOptions = {
-            url: 'https://accounts.spotify.com/api/token',
-            method: 'post',
-            params: {
-                grant_type: 'authorization_code',
-                code: code,
-                redirect_uri: redirectUri,
-            },
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
-            },
-        };
+    try {
+        const authOptions = {
+            url: 'https://accounts.spotify.com/api/token',
+            method: 'post',
+            params: {
+                grant_type: 'authorization_code',
+                code: code,
+                redirect_uri: redirectUri,
+            },
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Authorization': 'Basic ' + Buffer.from(`${clientId}:${clientSecret}`).toString('base64'),
+            },
+        };
 
-        const response = await axios(authOptions);
-        const newAccessToken = response.data.access_token;
+        const response = await axios(authOptions);
+        const newAccessToken = response.data.access_token;
         const newRefreshToken = response.data.refresh_token;
 
         // Get the user's Spotify profile to find their ID
@@ -87,7 +82,7 @@ app.get('/callback', async (req, res) => {
             headers: { 'Authorization': `Bearer ${newAccessToken}` }
         });
         const spotifyUserId = profileResponse.data.id;
-        
+
         // Store tokens and user ID in the session and in-memory store
         req.session.userId = spotifyUserId;
         userTokens[spotifyUserId] = {
@@ -96,14 +91,14 @@ app.get('/callback', async (req, res) => {
             expiresAt: Date.now() + (response.data.expires_in * 1000)
         };
 
-        console.log(`Authentication successful for user: ${profileResponse.data.display_name}!`);
-        // Redirect the user back to the main page
+        console.log(`Authentication successful for user: ${profileResponse.data.display_name}!`);
+        // Redirect the user back to the main page
         res.redirect('/');
 
-    } catch (error) {
-        console.error('Error during token exchange:', error.response?.data || error.message);
-        res.status(500).json({ error: 'Failed to authenticate with Spotify.' });
-    }
+    } catch (error) {
+        console.error('Error during token exchange:', error.response?.data || error.message);
+        res.status(500).json({ error: 'Failed to authenticate with Spotify.' });
+    }
 });
 
 // New endpoint to check authentication status
@@ -154,7 +149,7 @@ app.use(async (req, res, next) => {
 
             user.accessToken = refreshResponse.data.access_token;
             user.expiresAt = now + (refreshResponse.data.expires_in * 1000);
-            
+
             console.log(`Access token refreshed successfully for user: ${userId}.`);
         } catch (error) {
             console.error('Failed to refresh token:', error.response?.data || error.message);
@@ -174,7 +169,7 @@ app.get('/', (req, res) => {
 // --- Debug endpoint to check CSV contents ---
 app.get('/debug-csv', (req, res) => {
     const csvFilePath = path.join(__dirname, 'final_features_data_with_uri.csv');
-    
+
     if (!fs.existsSync(csvFilePath)) {
         return res.status(404).json({ error: `CSV file not found at: ${csvFilePath}` });
     }
@@ -445,7 +440,7 @@ app.get('/refresh-token', async (req, res) => {
     if (!userId || !userTokens[userId]) {
         return res.status(401).json({ error: 'No refresh token available. Please log in first.' });
     }
-    
+
     try {
         const authOptions = {
             url: 'https://accounts.spotify.com/api/token',
