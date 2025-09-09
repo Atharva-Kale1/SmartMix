@@ -124,6 +124,13 @@ app.get('/logout', (req, res) => {
     res.redirect('/');
 });
 
+// --- Serve the HTML file for the root path ---
+app.get('/', (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect('/login');
+    }
+    res.sendFile(path.join(__dirname, 'client.html'));
+});
 
 // Middleware to check and refresh tokens for all protected endpoints
 app.use(async (req, res, next) => {
