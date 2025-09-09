@@ -11,8 +11,8 @@ from sklearn.metrics.pairwise import cosine_similarity
 n_mfcc_features = 5
 # Weights for each feature group (tune as needed)
 MFCC_WEIGHT = 0.4
-CHROMA_WEIGHT = 0.3
-TEMPO_WEIGHT = 0.3
+CHROMA_WEIGHT = 0.2
+TEMPO_WEIGHT = 0.4
 
 # Suppress warnings
 warnings.filterwarnings("ignore", category=UserWarning)
